@@ -5,6 +5,11 @@ from aimakerspace.openai_utils.embedding import EmbeddingModel
 import asyncio
 
 
+def euclidean_distance(vector_a: np.array, vector_b: np.array) -> float:
+    """Computes the euclidean distance of two vectors."""
+    return np.linalg.norm(vector_a - vector_b)
+
+
 def cosine_similarity(vector_a: np.array, vector_b: np.array) -> float:
     """Computes the cosine similarity between two vectors."""
     dot_product = np.dot(vector_a, vector_b)
@@ -67,7 +72,7 @@ if __name__ == "__main__":
     vector_db = asyncio.run(vector_db.abuild_from_list(list_of_text))
     k = 2
 
-    searched_vector = vector_db.search_by_text("I think fruit is awesome!", k=k)
+    searched_vector = vector_db.search_by_text("I think fruit is awesome!", k=k, distance_measure=euclidean_distance)
     print(f"Closest {k} vector(s):", searched_vector)
 
     retrieved_vector = vector_db.retrieve_from_key(
@@ -76,6 +81,6 @@ if __name__ == "__main__":
     print("Retrieved vector:", retrieved_vector)
 
     relevant_texts = vector_db.search_by_text(
-        "I think fruit is awesome!", k=k, return_as_text=True
+        "I think fruit is awesome!", k=k, distance_measure=euclidean_distance, return_as_text=True
     )
     print(f"Closest {k} text(s):", relevant_texts)
