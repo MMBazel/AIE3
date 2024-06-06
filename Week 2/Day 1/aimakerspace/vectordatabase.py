@@ -1,14 +1,8 @@
-import numpy as np
-from collections import defaultdict
-from typing import List, Tuple, Callable
-from aimakerspace.openai_utils.embedding import EmbeddingModel
 import asyncio
-
-
-def euclidean_distance(vector_a: np.array, vector_b: np.array) -> float:
-    """Computes the euclidean distance of two vectors."""
-    return np.linalg.norm(vector_a - vector_b)
-
+from collections import defaultdict
+import numpy as np
+from typing import List, Tuple, Callable
+from aimakerspace.openai_utils.embedding import EmbeddingModel  # Change: Import EmbeddingModel
 
 def cosine_similarity(vector_a: np.array, vector_b: np.array) -> float:
     """Computes the cosine similarity between two vectors."""
@@ -17,14 +11,19 @@ def cosine_similarity(vector_a: np.array, vector_b: np.array) -> float:
     norm_b = np.linalg.norm(vector_b)
     return dot_product / (norm_a * norm_b)
 
+def euclidean_distance(vector_a: np.array, vector_b: np.array) -> float:
+    """Computes the Euclidean distance between two vectors."""
+    return np.linalg.norm(vector_a - vector_b)
 
 class VectorDatabase:
-    def __init__(self, embedding_model: EmbeddingModel = None):
-        self.vectors = defaultdict(np.array)
+    def __init__(self, embedding_model=None):
+        # Change 1: Update to store metadata
+        self.vectors = defaultdict(lambda: {"vector": None, "metadata": {}})
         self.embedding_model = embedding_model or EmbeddingModel()
 
-    def insert(self, key: str, vector: np.array) -> None:
-        self.vectors[key] = vector
+    def insert(self, key: str, vector: np.array, metadata: dict = None) -> None:
+        # Change 2: Add metadata support in insert method
+        self.vectors[key] = {"vector": vector, "metadata": metadata or {}}
 
     def search(
         self,
@@ -33,8 +32,8 @@ class VectorDatabase:
         distance_measure: Callable = cosine_similarity,
     ) -> List[Tuple[str, float]]:
         scores = [
-            (key, distance_measure(query_vector, vector))
-            for key, vector in self.vectors.items()
+            (key, distance_measure(query_vector, value["vector"]))
+            for key, value in self.vectors.items()
         ]
         return sorted(scores, key=lambda x: x[1], reverse=True)[:k]
 
@@ -49,7 +48,8 @@ class VectorDatabase:
         results = self.search(query_vector, k, distance_measure)
         return [result[0] for result in results] if return_as_text else results
 
-    def retrieve_from_key(self, key: str) -> np.array:
+    def retrieve_from_key(self, key: str) -> dict:
+        # Change 3: Update to return metadata along with vector
         return self.vectors.get(key, None)
 
     async def abuild_from_list(self, list_of_text: List[str]) -> "VectorDatabase":
@@ -57,6 +57,8 @@ class VectorDatabase:
         for text, embedding in zip(list_of_text, embeddings):
             self.insert(text, np.array(embedding))
         return self
+
+
 
 
 if __name__ == "__main__":
@@ -69,18 +71,24 @@ if __name__ == "__main__":
     ]
 
     vector_db = VectorDatabase()
-    vector_db = asyncio.run(vector_db.abuild_from_list(list_of_text))
+    # Change 1: Synchronously get embeddings
+    embeddings = vector_db.embedding_model.get_embeddings(list_of_text)  
+
+    # Change 2: Insert text and metadata into the vector database
+    for text, embedding in zip(list_of_text, embeddings):
+        metadata = {"source": "example_text", "length": len(text)}
+        vector_db.insert(text, np.array(embedding), metadata)
+
     k = 2
 
+    # Change 3: Perform a search and print results
     searched_vector = vector_db.search_by_text("I think fruit is awesome!", k=k, distance_measure=euclidean_distance)
     print(f"Closest {k} vector(s):", searched_vector)
 
-    retrieved_vector = vector_db.retrieve_from_key(
-        "I like to eat broccoli and bananas."
-    )
-    print("Retrieved vector:", retrieved_vector)
+    # Change 4: Retrieve a specific vector and print it with metadata
+    retrieved_vector = vector_db.retrieve_from_key("I like to eat broccoli and bananas.")
+    print("Retrieved vector with metadata:", retrieved_vector)
 
-    relevant_texts = vector_db.search_by_text(
-        "I think fruit is awesome!", k=k, distance_measure=euclidean_distance, return_as_text=True
-    )
+    # Change 5: Perform another search and print results as text
+    relevant_texts = vector_db.search_by_text("I think fruit is awesome!", k=k, distance_measure=euclidean_distance, return_as_text=True)
     print(f"Closest {k} text(s):", relevant_texts)
