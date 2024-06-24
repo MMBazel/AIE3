@@ -33,6 +33,7 @@
 ![alt text](img/embedding-endpoint.png)
 
 ### The Loom video 
+https://www.loom.com/share/162d71e4d445442faa40dba76f4cbf13
 
 
 ### Lessons Learned & Open Questions
@@ -41,6 +42,9 @@
 1. Learning how to translate notebook code into scripts.
 2. Learning/reminder that HF spaces can be used in dev mode and connected to VSCode.
 3. Learning how to setup LCEL RAG Chain.
+    - Understand how to deploy open-source LLMs & embedding models to scalable endpoints for production-grade LLM & RAG applications
+    - Build a RAG application with LCEL
+    - Build a front-end UI for RAG applications with Chainlit
 
 #### Questions
 1. What are the challenges using LangChain in production - see lots of folks complaining about it on LinkedIn and Twitter. 
